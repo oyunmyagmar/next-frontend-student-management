@@ -10,7 +10,7 @@ import {
   LockOutlined,
   KeyOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
+import React, { useState } from "react";
 import Countdown from "antd/lib/statistic/Countdown";
 import { useRouter } from "next/navigation";
 import { openNotification } from "../../../../utils/notificationResponse";
@@ -31,8 +31,7 @@ const SignUp = observer(({ registerStore }) => {
       );
 
       if (response?.result) {
-        // КОР НЭХЭХГҮЙ шууд нэвтрэх хуудас руу үсэрнэ
-        router.push("/auth/signin");
+        router.push("/pages/auth/signin");
       }
     });
   };
@@ -119,7 +118,7 @@ const SignUp = observer(({ registerStore }) => {
               </Col>
             </Row>
             <Form.Item
-              name="username"
+              name="email"
               rules={[
                 { type: "email", message: "Имэйл хаягаа зөв бичнэ үү" },
                 { required: true, message: "Имэйл хаяг бичнэ үү" },
