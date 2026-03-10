@@ -5,7 +5,6 @@ export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      // Frontend-ээс (SignIn.js) дамжуулсан email, password энд орж ирнэ
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Имэйл болон нууц үгээ оруулна уу.");
@@ -24,7 +23,6 @@ export const authOptions = {
           const response = await res.json();
 
           if (res.ok && response.result) {
-            // Буцааж буй объект 'user' хувьсагчид хадгалагдана
             return {
               id: response.data.id,
               name: response.data.username,
@@ -48,29 +46,29 @@ export const authOptions = {
         token.accessToken = user.accessToken;
         token.id = user.id;
         token.name = user.name;
+        token.email = user.email;
       }
       return token;
     },
-    // 2. Session callback: useSession() ашиглан Frontend-ээс өгөгдөл авахад ажиллана
     async session({ session, token }) {
       if (token) {
         session.accessToken = token.accessToken;
         session.user.id = token.id;
         session.user.name = token.name;
+        session.user.email = token.email || token.sub;
       }
       return session;
     },
   },
-  // Нэвтрэх хуудас болон бусад auth хуудсуудын замыг зааж өгнө
   pages: {
     signIn: "/auth/signin",
-    error: "/auth/signin", // Алдаа гарвал буцаад нэвтрэх хуудас руу шиднэ
+    error: "/auth/signin",
   },
-  // JWT нууцлалын тохиргоо (Бодит төсөлд заавал .env-ээс авна)
+
   secret: process.env.NEXTAUTH_SECRET || "your-development-secret-key-12345",
   session: {
-    strategy: "jwt", // Бид JWT ашиглаж байгаа тул 'jwt' гэж зааж өгнө
-    maxAge: 24 * 60 * 60, // 24 цаг
+    strategy: "jwt",
+    maxAge: 2 * 60, // 2 min
   },
 };
 

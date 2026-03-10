@@ -21,8 +21,11 @@ export default function MainHeader() {
   const items = [
     {
       key: "profile",
-      label: "Миний профайл",
+      label: "Миний бүртгэл",
       icon: <UserOutlined />,
+    },
+    {
+      type: "divider",
     },
     {
       key: "logout",
@@ -69,7 +72,7 @@ export default function MainHeader() {
             <Space
               style={{
                 cursor: "pointer",
-                padding: "6px 16px", // Дотор зайг нэмэв
+                padding: "6px 16px",
                 borderRadius: "25px",
                 background: "#f8f9fa",
                 border: "1px solid #f0f0f0",
@@ -93,7 +96,7 @@ export default function MainHeader() {
                 </Text>
               </div>
               <Avatar
-                size="large" // Аватарыг томруулав
+                size="large"
                 style={{ backgroundColor: "#1890ff" }}
                 icon={<UserOutlined />}
                 src={session.user?.image}
@@ -102,8 +105,6 @@ export default function MainHeader() {
           </Dropdown>
         ) : (
           <Space size="middle">
-            {" "}
-            {/* Товчнууд хоорондын зайг нэмэв */}
             <Button
               type="text"
               size="large"
@@ -114,7 +115,7 @@ export default function MainHeader() {
             </Button>
             <Button
               type="primary"
-              size="large" // Товчийг томруулав
+              size="large"
               icon={<UserAddOutlined />}
               style={{ borderRadius: "8px", fontWeight: "600" }}
               onClick={() => router.push("/auth/signup")}

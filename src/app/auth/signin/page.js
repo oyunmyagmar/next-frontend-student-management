@@ -6,8 +6,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Alert, Button, Checkbox, Form, Input, Divider } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { openNotification } from "../../../utils/notificationResponse";
+import { jwtDecode } from "jwt-decode";
 
 const Auth = dynamic(() => import("../index"), { ssr: false });
 
@@ -21,23 +22,28 @@ const SignIn = () => {
     setError(null);
 
     try {
-      // credentials-аар нэвтрэх хүсэлт илгээх
       const result = await signIn("credentials", {
-        redirect: false, // Хуудсыг шууд refresh хийхээс сэргийлнэ
+        redirect: false,
         email: values.email,
         password: values.password,
       });
 
       if (result?.error) {
-        // authorize() функцээс шидсэн throw new Error() энд ирнэ
         setError(result.error);
         openNotification("error", "Нэвтрэхэд алдаа гарлаа", result.error);
       } else if (result?.ok) {
+        const session = await getSession();
+        const token = session?.accessToken;
+
+        if (token) {
+          const decoded = jwtDecode(token);
+          const timeLeftInSeconds = Math.round(decoded.exp - Date.now() / 1000);
+          console.log("JWT Payload:", decoded);
+          console.log(`Танд ${timeLeftInSeconds} секунд байна.`);
+        }
         openNotification("success", "Амжилттай", "Та системд нэвтэрлээ.");
 
-        // Dashboard руу шилжих
         router.push("/dashboard");
-        // Сессийг бүрэн шинэчлэх
         router.refresh();
       }
     } catch (err) {

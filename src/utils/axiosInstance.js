@@ -9,10 +9,8 @@ const axiosInstance = axios.create({
   },
 });
 
-// 1. Request Interceptor: Токеныг автоматаар нэмэх
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Next-auth сессээс токеныг авна
     const session = await getSession();
     const token = session?.token || session?.accessToken;
 
@@ -27,13 +25,17 @@ axiosInstance.interceptors.request.use(
   },
 );
 
-// 2. Response Interceptor: Алдааг удирдах
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Backend-ээс ирсэн өгөгдлийг шууд .data-гаар нь буцаах (кодоо цэгцтэй болгоно)
     return response.data;
   },
   async (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Токен дууссан байна. Системээс гаргаж байна...");
+
+      await signOut({ callbackUrl: "/auth/signin" });
+    }
+    return Promise.reject(error);
     // const originalRequest = error.config;
 
     // // Хэрэв токен хүчингүй болсон (401) бол системээс гаргах эсвэл рефреш хийх
@@ -46,13 +48,13 @@ axiosInstance.interceptors.response.use(
     // }
 
     // Алдааны мессежийг илүү ойлгомжтой болгох
-    const customError = {
-      message: error.response?.data?.message || "Системд алдаа гарлаа",
-      status: error.response?.status,
-      data: error.response?.data,
-    };
+    // const customError = {
+    //   message: error.response?.data?.message || "Системд алдаа гарлаа",
+    //   status: error.response?.status,
+    //   data: error.response?.data,
+    // };
 
-    return Promise.reject(customError);
+    // return Promise.reject(customError);
   },
 );
 

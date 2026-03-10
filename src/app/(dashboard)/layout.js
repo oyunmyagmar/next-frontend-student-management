@@ -26,6 +26,9 @@ import {
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import axiosInstance from "../../utils/axiosInstance";
+import SessionTimer from "../_components/SessionTimer";
+import { useSessionTimeout } from "../hooks/useSessionTimeout";
 
 const { Header, Sider, Content } = Layout;
 
@@ -36,6 +39,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  useSessionTimeout();
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -43,14 +47,14 @@ export default function DashboardLayout({ children }) {
 
   const handleAddStudent = async (values) => {
     try {
-      const response = await axiosInstance.post("/api/students", values);
+      const response = await axiosInstance.post("/api/create-student", values);
       console.log("Бүртгэх утгууд:", values);
 
       message.success(response.message || "Оюутан амжилттай бүртгэгдлээ!");
 
       form.resetFields();
       setIsModalOpen(false);
-      router.refresh();
+      window.dispatchEvent(new Event("studentAdded"));
     } catch (error) {
       message.error(error.message || "Бүртгэхэд алдаа гарлаа.");
       console.error("Student add error:", error);
@@ -59,12 +63,11 @@ export default function DashboardLayout({ children }) {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* 1. Sider-ийг fixed байлгахдаа Layout-ийн гадна биш дотор нь байлгана */}
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
-        width={240} // Өргөнийг нь жаахан нэмбэл цэвэрхэн
+        width={240}
         style={{
           overflow: "auto",
           height: "100vh",
@@ -72,7 +75,7 @@ export default function DashboardLayout({ children }) {
           left: 0,
           top: 0,
           bottom: 0,
-          zIndex: 101, // Header-ээс өндөр байх ёстой
+          zIndex: 101,
         }}
       >
         <div
@@ -121,7 +124,6 @@ export default function DashboardLayout({ children }) {
         />
       </Sider>
 
-      {/* 2. Үндсэн агуулгын хэсэг - Sidebar-ийн өргөнөөр margin авна */}
       <Layout
         style={{ marginLeft: collapsed ? 80 : 240, transition: "all 0.2s" }}
       >
@@ -145,7 +147,7 @@ export default function DashboardLayout({ children }) {
           />
 
           <Space size={24}>
-            {/* --- ОЮУТАН НЭМЭХ ТОВЧ --- */}
+            <SessionTimer />
             <Button
               type="primary"
               icon={<UserAddOutlined />}
@@ -168,15 +170,14 @@ export default function DashboardLayout({ children }) {
           {children}
         </Content>
 
-        {/* --- ОЮУТАН БҮРТГЭХ MODAL --- */}
         <Modal
           title="Шинэ оюутан бүртгэх"
           open={isModalOpen}
-          onOk={() => form.submit()} // Modal-ийн 'OK' товч дарахад формыг submit хийнэ
+          onOk={() => form.submit()}
           onCancel={() => setIsModalOpen(false)}
           okText="Бүртгэх"
           cancelText="Цуцлах"
-          destroyOnClose // Хаагдах үед доторх утгуудыг устгах
+          destroyOnClose
         >
           <Divider />
           <Form form={form} layout="vertical" onFinish={handleAddStudent}>
