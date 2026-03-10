@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Row, Col, Form, Input, Button } from "antd";
-import { inject, observer } from "mobx-react";
+import { Row, Col, Form, Input, Button, Statistic } from "antd"; // Countdown-ийг Statistic-ээс авна
+import { observer } from "mobx-react";
 import {
   UserOutlined,
   MailOutlined,
@@ -11,36 +11,41 @@ import {
   KeyOutlined,
 } from "@ant-design/icons";
 import React, { useState } from "react";
-import Countdown from "antd/lib/statistic/Countdown";
 import { useRouter } from "next/navigation";
-import { openNotification } from "../../../../utils/notificationResponse";
-
+import { openNotification } from "../../../utils/notificationResponse";
+import { registerStore } from "../../../stores";
+const { Countdown } = Statistic;
 const Auth = dynamic(() => import("../index"), { ssr: false });
 
-const SignUp = observer(({ registerStore }) => {
+const SignUp = observer(() => {
   const router = useRouter();
   const { loading } = registerStore;
   const [codeSent, setCodeSent] = useState(false);
   const [username, setUsername] = useState("");
 
+  // 1. Бүртгүүлэх хүсэлт илгээх
   const onFinish = (values) => {
     registerStore.sendCode(values).then((response) => {
       openNotification(
         response?.result ? "success" : "warning",
-        response?.result ? response?.data : response?.message || "",
+        response?.result
+          ? "Баталгаажуулах код имэйлээр илгээгдлээ."
+          : response?.message || "Алдаа гарлаа",
       );
 
       if (response?.result) {
-        router.push("/pages/auth/signin");
+        setUsername(values.email);
+        setCodeSent(true);
       }
     });
   };
 
+  // 2. Кодоо баталгаажуулаад нэвтрэх рүү шилжих
   const onFinishActivate = (values) => {
     registerStore.activate(values.code, username).then((response) => {
       openNotification(
         response?.result ? "success" : "warning",
-        response?.result ? response?.data : response?.message || "",
+        response?.result ? "Амжилттай баталгаажлаа." : response?.message || "",
       );
       if (response?.result) {
         router.push("/auth/signin");
@@ -53,13 +58,18 @@ const SignUp = observer(({ registerStore }) => {
   return (
     <Auth>
       {codeSent ? (
-        <>
+        <div style={{ textAlign: "center" }}>
           <Countdown
-            title="Хугацаа"
+            title="Код хүчинтэй хугацаа"
             value={deadline}
             onFinish={() => setCodeSent(false)}
           />
-          <Form name="signup" scrollToFirstError onFinish={onFinishActivate}>
+          <Form
+            name="activate"
+            scrollToFirstError
+            onFinish={onFinishActivate}
+            layout="vertical"
+          >
             <Form.Item
               name="code"
               rules={[
@@ -69,7 +79,7 @@ const SignUp = observer(({ registerStore }) => {
               <Input
                 size="large"
                 prefix={<KeyOutlined />}
-                placeholder="Баталгаажуулах код"
+                placeholder="6 оронтой код"
               />
             </Form.Item>
             <Form.Item>
@@ -83,12 +93,15 @@ const SignUp = observer(({ registerStore }) => {
                 Баталгаажуулах
               </Button>
             </Form.Item>
+            <Button type="link" onClick={() => setCodeSent(false)}>
+              Буцах
+            </Button>
           </Form>
-        </>
+        </div>
       ) : (
         <>
-          <h3>Хэрэглэгчийн бүртгэл</h3>
-          <Form name="signup" scrollToFirstError onFinish={onFinish}>
+          <h3 style={{ marginBottom: 24 }}>Хэрэглэгчийн бүртгэл</h3>
+          <Form name="signup" layout="vertical" onFinish={onFinish}>
             <Row gutter={15}>
               <Col span={12}>
                 <Form.Item
@@ -98,21 +111,19 @@ const SignUp = observer(({ registerStore }) => {
                   <Input
                     size="large"
                     prefix={<UserOutlined />}
-                    placeholder="Таны нэр"
+                    placeholder="Нэр"
                   />
                 </Form.Item>
               </Col>
-              <Col>
+              <Col span={12}>
                 <Form.Item
                   name="lastName"
-                  rules={[
-                    { required: true, message: "Эцэг/ эхийн нэр бичнэ үү" },
-                  ]}
+                  rules={[{ required: true, message: "Овог бичнэ үү" }]}
                 >
                   <Input
                     size="large"
                     prefix={<UserOutlined />}
-                    placeholder="Эцэг/ эхийн нэр"
+                    placeholder="Овог"
                   />
                 </Form.Item>
               </Col>
@@ -157,7 +168,7 @@ const SignUp = observer(({ registerStore }) => {
               <Input.Password
                 size="large"
                 prefix={<LockOutlined />}
-                placeholder="Нууц үгээ давтах"
+                placeholder="Нууц үг давтах"
               />
             </Form.Item>
             <Form.Item>
@@ -177,8 +188,5 @@ const SignUp = observer(({ registerStore }) => {
     </Auth>
   );
 });
-const SignUpWrapper = inject((stores) => ({
-  registerStore: stores.registerStore,
-}))(SignUp);
 
-export default SignUpWrapper;
+export default SignUp;

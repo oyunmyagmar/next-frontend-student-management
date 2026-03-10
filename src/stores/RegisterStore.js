@@ -1,11 +1,12 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import axios from "axios";
 
 class RegisterStore {
   loading = false;
+  user = null;
 
   constructor() {
-    makeAutoObservable(this); // Энэ нь loading өөрчлөгдөхөд React-д мэдэгдэнэ
+    makeAutoObservable(this);
   }
 
   // Баталгаажуулах код илгээх (Backend-ийн POST /api/auth/signup-тай холбогдоно)
@@ -17,35 +18,39 @@ class RegisterStore {
         values, // Энд firstName, lastName, username, password бүгд явна
       );
       // Амжилттай болбол Backend-ээс ирсэн мессежийг буцаана
-      return { result: true, data: response.data };
+      return response.data;
     } catch (error) {
       return {
         result: false,
         message: error.response?.data?.message || "Бүртгэл амжилтгүй боллоо",
       };
     } finally {
-      this.loading = false;
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
 
-  // 2. Код баталгаажуулж бүртгэл идэвхжүүлэх
-  // async activate(code, username) {
-  //   this.loading = true;
-  //   try {
-  //     const response = await axios.post(
-  //       "http://localhost:8086/api/auth/activate",
-  //       { code, username },
-  //     );
-  //     return { result: true, data: response.data };
-  //   } catch (error) {
-  //     return {
-  //       result: false,
-  //       message: error.response?.data?.message || "Баталгаажуулалт амжилтгүй",
-  //     };
-  //   } finally {
-  //     this.loading = false;
-  //   }
-  // }
+  async activate(code, username) {
+    this.loading = true;
+    try {
+      const response = await axios.post(
+        "http://localhost:8086/api/auth/activate",
+        { code, username },
+      );
+      return response.data;
+      // return { result: true, data: response.data };
+    } catch (error) {
+      return {
+        result: false,
+        message: error.response?.data?.message || "Баталгаажуулалт амжилтгүй",
+      };
+    } finally {
+      runInAction(() => {
+        this.loading = false;
+      });
+    }
+  }
 
   // 3. Нэвтрэх логик (Хэрэв Next-Auth-аас гадуур MobX-оор удирдах бол)
   // Жишээ нь: Профайл мэдээлэл татах

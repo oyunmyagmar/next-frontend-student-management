@@ -1,14 +1,13 @@
 "use client";
 
-import axios from "axios";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Alert, Button, Checkbox, Form, Input, Divider } from "antd";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { openNotification } from "../../../../utils/notificationResponse";
-import axiosInstance from "../../../../utils/axiosInstance";
+import { signIn } from "next-auth/react"; // NextAuth-ийн функцийг импортлох
+import { openNotification } from "../../../utils/notificationResponse";
 
 const Auth = dynamic(() => import("../index"), { ssr: false });
 
@@ -21,34 +20,31 @@ const SignIn = () => {
     try {
       setLoading(true);
       setError(null);
-      let payloud = {
+
+      // 1. NextAuth-ийн signIn функцийг дуудах
+      // Энэ нь цаанаа /api/auth/[...nextauth]/route.js доторх authorize() логикийг ажиллуулна
+      const result = await signIn("credentials", {
+        redirect: false, // Амжилттай болвол шууд үсрэхгүй, бид өөрсдөө Notification харуулахын тулд
         email: values.email,
         password: values.password,
-      };
-      const response = await axiosInstance.post("/api/auth/login", payloud);
+      });
 
-      if (response.status === 200) {
-        const userData = response.data;
-
-        localStorage.setItem("user", JSON.stringify(userData));
-
+      if (result?.error) {
+        // Хэрэв Backend-ээс алдаа ирвэл (Нууц үг буруу, эсвэл идэвхжээгүй гэх мэт)
+        setError(result.error);
+        openNotification("warning", "Алдаа", result.error);
+      } else {
+        // 2. Амжилттай болвол
         openNotification("success", "Амжилттай", "Та системд нэвтэрлээ.");
-        router.push("/pages/dashboard");
+
+        // Dashboard руу шилжих
+        router.push("/dashboard");
+        // Next.js-ийн сессийг шинэчлэхийн тулд refresh хийнэ
         router.refresh();
       }
     } catch (err) {
-      console.log("error : " + JSON.stringify(err));
-
-      let errorMessage = "Имэйл эсвэл нууц үг буруу байна.";
-
-      if (err.response) {
-        errorMessage = err.response.data.message || errorMessage;
-      } else if (err.request) {
-        errorMessage = "Сервертэй холбогдож чадсангүй (Backend асаалттай юу?)";
-      }
-
-      setError(errorMessage);
-      openNotification("warning", "Алдаа", errorMessage);
+      setError("Системд холбогдоход алдаа гарлаа.");
+      openNotification("error", "Алдаа", "Сервертэй холбогдож чадсангүй.");
     } finally {
       setLoading(false);
     }
@@ -58,9 +54,11 @@ const SignIn = () => {
     <>
       <Auth>
         <div style={{ marginBottom: "24px" }}>
-          <h3>Хэрэглэгчийн системд нэвтрэх</h3>
+          <h3 style={{ fontSize: "24px", fontWeight: "bold" }}>
+            Системд нэвтрэх
+          </h3>
           <p style={{ color: "#8c8c8c" }}>
-            Өөрийн бүртгэлтэй имэйл хаягаар нэвтэрнэ үү.
+            Бүртгэлтэй имэйл хаяг болон нууц үгээ ашиглана уу.
           </p>
         </div>
 
@@ -78,7 +76,7 @@ const SignIn = () => {
         <Form
           name="login_form"
           initialValues={{ remember: true }}
-          onFinish={onFinish}
+          onFinish={onFinish} // Form-ын утгыг onFinish функц рүү дамжуулна
           layout="vertical"
         >
           <Form.Item
@@ -92,6 +90,7 @@ const SignIn = () => {
               size="large"
               prefix={<UserOutlined style={{ color: "#bfbfbf" }} />}
               placeholder="Имэйл хаяг"
+              style={{ borderRadius: "8px" }}
             />
           </Form.Item>
 
@@ -103,6 +102,7 @@ const SignIn = () => {
               size="large"
               prefix={<LockOutlined style={{ color: "#bfbfbf" }} />}
               placeholder="Нууц үг"
+              style={{ borderRadius: "8px" }}
             />
           </Form.Item>
 
@@ -110,8 +110,11 @@ const SignIn = () => {
             <Form.Item name="remember" valuePropName="checked" noStyle>
               <Checkbox>Намайг сана</Checkbox>
             </Form.Item>
-            <Link href="/pages/auth/forgot" style={{ float: "right" }}>
-              Нууц үгээ мартсан?
+            <Link
+              href="/auth/forgot"
+              style={{ float: "right", color: "#1890ff" }}
+            >
+              Нууц үгээ мартсан уу?
             </Link>
           </Form.Item>
 
@@ -122,7 +125,12 @@ const SignIn = () => {
               loading={loading}
               block
               htmlType="submit"
-              style={{ height: "45px", fontSize: "16px" }}
+              style={{
+                height: "45px",
+                fontSize: "16px",
+                borderRadius: "8px",
+                backgroundColor: "#1890ff",
+              }}
             >
               Нэвтрэх
             </Button>
@@ -136,8 +144,11 @@ const SignIn = () => {
             <Button
               size="large"
               block
-              onClick={() => router.push("/pages/auth/signup")}
-              style={{ height: "45px" }}
+              onClick={() => router.push("/auth/signup")}
+              style={{
+                height: "45px",
+                borderRadius: "8px",
+              }}
             >
               Шинээр бүртгүүлэх
             </Button>
