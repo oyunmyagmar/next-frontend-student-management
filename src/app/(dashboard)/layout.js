@@ -38,7 +38,6 @@ export default function DashboardLayout({ children }) {
   const [form] = Form.useForm();
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
   useSessionTimeout();
 
   const {

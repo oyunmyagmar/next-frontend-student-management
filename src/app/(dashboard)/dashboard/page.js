@@ -23,12 +23,16 @@ import {
 import axiosInstance from "../../../utils/axiosInstance";
 import { useEffect, useState } from "react";
 import { useSessionTimeout } from "../../hooks/useSessionTimeout";
+import { StudentInfoEditModal } from "../dashboard/_components/StudentInfoEditModal";
 const { Title } = Typography;
 
 export default function DashboardPage() {
   const [students, setStudents] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+
   useSessionTimeout();
 
   const fetchStudents = async () => {
@@ -45,26 +49,14 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchStudentsCount = async () => {
-    setLoading(true);
-    try {
-    } catch (error) {
-      console.error("Оюутнууд тоог татахад алдаа гарлаа:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchStudents();
+
     const handleRefresh = () => {
       console.log("Шинэ оюутан нэмэгдсэн дохио ирлээ. Датаг шинэчилж байна...");
       fetchStudents();
-      fetchStudentsCount();
     };
-
     window.addEventListener("studentAdded", handleRefresh);
-
     return () => {
       window.removeEventListener("studentAdded", handleRefresh);
     };
@@ -74,12 +66,33 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       await axiosInstance.delete(`/api/delete-student/${id}`);
-
       message.success("Оюутан амжилттай устгагдлаа");
-      await Promise.all([fetchStudents(), fetchStudentsCount()]);
+      fetchStudents();
     } catch (error) {
       console.error("Устгахад алдаа гарлаа:", error);
       message.error("Оюутныг устгахад алдаа гарлаа");
+      setLoading(false);
+    }
+  };
+
+  const showEditModal = (record) => {
+    setEditingStudent(record);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async (values) => {
+    setLoading(true);
+    try {
+      await axiosInstance.put(
+        `/api/update-student/${editingStudent.id}`,
+        values,
+      );
+      message.success("Мэдээлэл амжилттай шинэчлэгдлээ");
+      setIsEditModalOpen(false); // Модал хаах
+      fetchStudents(); // Датаг шинэчлэх
+    } catch (error) {
+      message.error("Шинэчлэхэд алдаа гарлаа");
+    } finally {
       setLoading(false);
     }
   };
@@ -184,6 +197,14 @@ export default function DashboardPage() {
           />
         </Card>
       </div>
+
+      <StudentInfoEditModal
+        open={isEditModalOpen}
+        student={editingStudent}
+        loading={loading}
+        onCancel={() => setIsEditModalOpen(false)}
+        onUpdate={handleUpdate}
+      />
     </div>
   );
 }

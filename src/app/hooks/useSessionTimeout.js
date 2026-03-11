@@ -1,7 +1,7 @@
 // useSessionTimeout.js
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Modal, message } from "antd";
 import { jwtDecode } from "jwt-decode";
@@ -9,8 +9,8 @@ import axiosInstance from "../../utils/axiosInstance";
 
 export const useSessionTimeout = () => {
   const { data: session } = useSession();
-  const [warningShown, setWarningShown] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
+  const modalOpened = useRef(false);
 
   useEffect(() => {
     if (!session?.accessToken) return;
@@ -29,16 +29,14 @@ export const useSessionTimeout = () => {
           return;
         }
 
-        // 20 секундээс бага үлдвэл анхааруулах
-        if (remaining <= 20 && remaining > 0 && !warningShown) {
-          setWarningShown(true);
+        if (remaining <= 20 && remaining > 0 && !modalOpened.current) {
+          modalOpened.current = true;
+
           Modal.warning({
             title: "Анхааруулга!",
             content: "Таны сесс 20 хүрэхгүй секундын дараа дуусах гэж байна.",
             okText: "Ойлголоо",
-            onOk: () => {
-              setWarningShown(true);
-            },
+            onOk: () => {},
           });
         }
       } catch (error) {
@@ -46,17 +44,16 @@ export const useSessionTimeout = () => {
       }
     };
 
-    // Таймерууд
-    const clientInterval = setInterval(checkTokenOnClient, 1000); // 1 сек тутамд (UI-д харуулах бол хурдан байх хэрэгтэй)
+    const clientInterval = setInterval(checkTokenOnClient, 1000);
     const serverInterval = setInterval(() => {
       axiosInstance.get("/api/auth/check-token").catch(() => {});
-    }, 6000);
+    }, 60000);
 
     return () => {
       clearInterval(clientInterval);
       clearInterval(serverInterval);
     };
-  }, [session, warningShown]);
+  }, [session]);
 
   return { timeLeft };
 };

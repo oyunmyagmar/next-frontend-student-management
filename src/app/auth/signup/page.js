@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Row, Col, Form, Input, Button, Statistic } from "antd"; // Countdown-ийг Statistic-ээс авна
+import { Row, Col, Form, Input, Button } from "antd";
 import { observer } from "mobx-react";
 import {
   UserOutlined,
@@ -14,7 +13,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { openNotification } from "../../../utils/notificationResponse";
 import { registerStore } from "../../../stores";
-const { Countdown } = Statistic;
+import Countdown from "antd/es/statistic/Countdown";
+
 const Auth = dynamic(() => import("../index"), { ssr: false });
 
 const SignUp = observer(() => {
