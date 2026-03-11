@@ -23,7 +23,8 @@ import {
 import axiosInstance from "../../../utils/axiosInstance";
 import { useEffect, useState } from "react";
 import { useSessionTimeout } from "../../hooks/useSessionTimeout";
-import { StudentInfoEditModal } from "../dashboard/_components/StudentInfoEditModal";
+import { StudentInfoEditModal } from "./_components/StudentInfoEditModal";
+import { useRouter } from "next/navigation";
 const { Title } = Typography;
 
 export default function DashboardPage() {
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
   const [inactiveCount, setInactiveCount] = useState(0);
+  const router = useRouter();
 
   useSessionTimeout();
 
@@ -123,8 +125,12 @@ export default function DashboardPage() {
             <Statistic
               title={<span style={{ fontSize: "14px" }}>Нийт Оюутнууд</span>}
               value={totalCount}
-              valueStyle={{ fontSize: "20px" }}
               prefix={<UserOutlined style={{ fontSize: "20px" }} />}
+              styles={{
+                content: {
+                  fontSize: "16px",
+                },
+              }}
             />
           </Card>
         </Col>
@@ -150,15 +156,20 @@ export default function DashboardPage() {
             <Statistic
               title={<span style={{ fontSize: "14px" }}>Идэвхитэй оюуан</span>}
               value={activeCount}
-              valueStyle={{ fontSize: "16px", lineHeight: "1" }}
-              styles={{ content: { color: "#52c41a" } }}
+              styles={{
+                content: {
+                  color: "#52c41a",
+                  fontSize: "16px",
+                  lineHeight: "1",
+                },
+              }}
             />
           </Card>
           <Card
             variant="borderless"
             style={{
               borderLeft: "4px solid #faad14",
-              flex: 1, // Баганын үлдэгдэл тал өндрийг авна
+              flex: 1,
               display: "flex",
               alignItems: "center",
             }}
@@ -167,8 +178,13 @@ export default function DashboardPage() {
             <Statistic
               title={<span style={{ fontSize: "14px" }}>Идэвхигүй оюутан</span>}
               value={inactiveCount}
-              valueStyle={{ fontSize: "16px", lineHeight: "1" }}
-              styles={{ content: { color: "#faad14" } }}
+              styles={{
+                content: {
+                  color: "#faad14",
+                  fontSize: "16px",
+                  lineHeight: "1",
+                },
+              }}
             />
           </Card>
         </Col>
@@ -189,9 +205,8 @@ export default function DashboardPage() {
                 <span style={{ fontSize: "14px" }}>Төлбөрийн үлдэгдэлтэй</span>
               }
               value={totalCount}
-              valueStyle={{ fontSize: "20px" }}
               prefix={<FallOutlined style={{ fontSize: "20px" }} />}
-              styles={{ content: { color: "#cf1322" } }}
+              styles={{ content: { color: "#cf1322", fontSize: "20px" } }}
             />
           </Card>
         </Col>
@@ -200,6 +215,12 @@ export default function DashboardPage() {
       <div style={{ marginTop: 30 }}>
         <Card title="Сүүлийн үеийн бүртгэл" variant="borderless">
           <Table
+            onRow={(record) => ({
+              onClick: () => {
+                router.push(`/dashboard/students/${record.id}`);
+              },
+              style: { cursor: "pointer" },
+            })}
             loading={loading}
             pagination={{ pageSize: 10 }}
             dataSource={students}
