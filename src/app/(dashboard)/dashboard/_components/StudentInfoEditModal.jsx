@@ -35,7 +35,7 @@ export function StudentInfoEditModal({
       okText="Хадгалах"
       cancelText="Цуцлах"
       confirmLoading={loading}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

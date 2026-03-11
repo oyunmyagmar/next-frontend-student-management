@@ -32,18 +32,25 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
 
   useSessionTimeout();
 
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const count = await axiosInstance.get("/api/count");
-      const data = await axiosInstance.get("/api/recent");
-      setStudents(data);
-      setTotalCount(count);
+      const [countRes, recentRes] = await Promise.all([
+        axiosInstance.get("/api/counts"),
+        axiosInstance.get("/api/recent"),
+      ]);
+
+      setTotalCount(countRes.total);
+      setStudents(recentRes);
+      setActiveCount(countRes.active);
+      setInactiveCount(countRes.inactive);
     } catch (error) {
-      console.error("Оюутнуудыг татахад алдаа гарлаа:", error);
+      console.error("Дата татахад алдаа гарлаа:", error);
     } finally {
       setLoading(false);
     }
@@ -88,8 +95,8 @@ export default function DashboardPage() {
         values,
       );
       message.success("Мэдээлэл амжилттай шинэчлэгдлээ");
-      setIsEditModalOpen(false); // Модал хаах
-      fetchStudents(); // Датаг шинэчлэх
+      setIsEditModalOpen(false);
+      fetchStudents();
     } catch (error) {
       message.error("Шинэчлэхэд алдаа гарлаа");
     } finally {
@@ -101,53 +108,104 @@ export default function DashboardPage() {
     <div>
       <Title level={3}>Системийн төлөв</Title>
 
-      <Row gutter={[16, 16]}>
-        <Col span={6}>
-          <Card bordered={false} style={{ borderLeft: "4px solid #1890ff" }}>
+      <Row gutter={[16, 16]} align="stretch" style={{ height: "130px" }}>
+        <Col span={6} style={{ height: "100%" }}>
+          <Card
+            variant="borderless"
+            style={{
+              borderLeft: "4px solid #1890ff",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+            }}
+            styles={{ body: { padding: "12px 16px", width: "100%" } }}
+          >
             <Statistic
-              title="Нийт Оюутнууд"
+              title={<span style={{ fontSize: "14px" }}>Нийт Оюутнууд</span>}
               value={totalCount}
-              prefix={<UserOutlined />}
+              valueStyle={{ fontSize: "20px" }}
+              prefix={<UserOutlined style={{ fontSize: "20px" }} />}
             />
           </Card>
         </Col>
-        <Col span={6}>
-          <Card bordered={false} style={{ borderLeft: "4px solid #52c41a" }}>
+        <Col
+          span={6}
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <Card
+            variant="borderless"
+            style={{
+              borderLeft: "4px solid #52c41a",
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+            styles={{ body: { padding: "4px 12px", width: "100%" } }}
+          >
             <Statistic
-              title="Ирц (Өнөөдөр)"
-              value={94.2}
-              precision={1}
-              suffix="%"
-              prefix={<RiseOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              title={<span style={{ fontSize: "14px" }}>Идэвхитэй оюуан</span>}
+              value={activeCount}
+              valueStyle={{ fontSize: "16px", lineHeight: "1" }}
+              styles={{ content: { color: "#52c41a" } }}
             />
           </Card>
-        </Col>
-        <Col span={6}>
-          <Card bordered={false} style={{ borderLeft: "4px solid #f5222d" }}>
+          <Card
+            variant="borderless"
+            style={{
+              borderLeft: "4px solid #faad14",
+              flex: 1, // Баганын үлдэгдэл тал өндрийг авна
+              display: "flex",
+              alignItems: "center",
+            }}
+            styles={{ body: { padding: "4px 12px", width: "100%" } }}
+          >
             <Statistic
-              title="Төлбөрийн үлдэгдэлтэй"
-              value={12}
-              prefix={<FallOutlined />}
-              valueStyle={{ color: "#cf1322" }}
+              title={<span style={{ fontSize: "14px" }}>Идэвхигүй оюутан</span>}
+              value={inactiveCount}
+              valueStyle={{ fontSize: "16px", lineHeight: "1" }}
+              styles={{ content: { color: "#faad14" } }}
             />
           </Card>
         </Col>
-        <Col span={6}>
-          <Card bordered={false} style={{ borderLeft: "4px solid #faad14" }}>
-            <Statistic title="Шинэ хүсэлт" value={5} />
+
+        <Col span={6} style={{ height: "100%" }}>
+          <Card
+            variant="borderless"
+            style={{
+              borderLeft: "4px solid #f5222d",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+            }}
+            styles={{ body: { padding: "4px 12px", width: "100%" } }}
+          >
+            <Statistic
+              title={
+                <span style={{ fontSize: "14px" }}>Төлбөрийн үлдэгдэлтэй</span>
+              }
+              value={totalCount}
+              valueStyle={{ fontSize: "20px" }}
+              prefix={<FallOutlined style={{ fontSize: "20px" }} />}
+              styles={{ content: { color: "#cf1322" } }}
+            />
           </Card>
         </Col>
       </Row>
 
       <div style={{ marginTop: 30 }}>
-        <Card title="Сүүлийн үеийн бүртгэл" bordered={false}>
+        <Card title="Сүүлийн үеийн бүртгэл" variant="borderless">
           <Table
             loading={loading}
             pagination={{ pageSize: 10 }}
             dataSource={students}
             rowKey="id"
             columns={[
+              { title: "Сонгох" },
               {
                 title: "Овог нэр",
                 key: "fullName",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSessionTimeout } from "../hooks/useSessionTimeout"; // Хуукаа зөв замаар импортлоорой
+import { useSessionTimeout } from "../hooks/useSessionTimeout";
 import { Badge, Space, Typography } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
 
@@ -9,15 +9,12 @@ const { Text } = Typography;
 export default function SessionTimer() {
   const { timeLeft } = useSessionTimeout();
 
-  // Хугацаа хараахан тодорхой болоогүй үед юу ч харуулахгүй
   if (timeLeft === null) return null;
 
-  // Секундыг минут:секунд хэлбэрт шилжүүлэх
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const timeString = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 
-  // 1 минут хүрэхгүй хугацаа үлдвэл улаан, бусад үед ногоон
   const isUrgent = timeLeft < 60;
   const statusColor = isUrgent ? "#ff4d4f" : "#52c41a";
 
@@ -25,9 +22,9 @@ export default function SessionTimer() {
     <Space
       style={{
         background: isUrgent ? "#fff2f0" : "#f6ffed",
-        padding: "0px 8px", // Дээд доод тал 0, хажуу тал 8px
-        height: "24px", // Өндрийг нь гараар хатуу зааж өгөх (ихэвчлэн 24px-32px тохиромжтой)
-        display: "flex", // Төвлөрүүлэхэд тусална
+        padding: "0px 8px",
+        height: "24px",
+        display: "flex",
         alignItems: "center",
         borderRadius: "20px",
         border: `1px solid ${statusColor}`,

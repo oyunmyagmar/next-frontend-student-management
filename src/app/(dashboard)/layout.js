@@ -176,7 +176,7 @@ export default function DashboardLayout({ children }) {
           onCancel={() => setIsModalOpen(false)}
           okText="Бүртгэх"
           cancelText="Цуцлах"
-          destroyOnClose
+          destroyOnHidden
         >
           <Divider />
           <Form form={form} layout="vertical" onFinish={handleAddStudent}>
