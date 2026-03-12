@@ -215,12 +215,6 @@ export default function DashboardPage() {
       <div style={{ marginTop: 30 }}>
         <Card title="Сүүлийн үеийн бүртгэл" variant="borderless">
           <Table
-            onRow={(record) => ({
-              onClick: () => {
-                router.push(`/dashboard/students/${record.id}`);
-              },
-              style: { cursor: "pointer" },
-            })}
             loading={loading}
             pagination={{ pageSize: 10 }}
             dataSource={students}
@@ -230,7 +224,20 @@ export default function DashboardPage() {
               {
                 title: "Овог нэр",
                 key: "fullName",
-                render: (record) => `${record.lastName} ${record.firstName}`,
+                render: (record) => (
+                  <span
+                    style={{
+                      color: "#1890ff",
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                    onClick={() =>
+                      router.push(`/dashboard/students/${record.id}`)
+                    }
+                  >
+                    {`${record.lastName} ${record.firstName}`}
+                  </span>
+                ),
               },
               { title: "Имэйл", dataIndex: "email", key: "email" },
               {
