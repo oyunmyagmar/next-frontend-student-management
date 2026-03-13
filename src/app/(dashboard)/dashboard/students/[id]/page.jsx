@@ -14,7 +14,7 @@ import {
   Spin,
   Space,
   Upload,
-  message, // 1. message-ийг импортлох хэрэгтэй
+  message,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -34,17 +34,23 @@ export default function StudentDetailPage() {
   const router = useRouter();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false); // Upload хийж байхад ашиглах тусдаа state
+  const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
 
+  // 1. Оюутны мэдээлэл татах хэсэг
   useEffect(() => {
     const fetchStudentDetails = async () => {
       setLoading(true);
       try {
         const response = await axiosInstance.get(`/api/students/${params.id}`);
         setStudent(response);
+
         if (response && response.avatarUrl) {
-          setImageUrl(response.avatarUrl);
+          // Хэрэв DB-д байгаа URL нь бүтэн биш бол Backend хаягийг залгана
+          const finalUrl = response.avatarUrl.startsWith("http")
+            ? response.avatarUrl
+            : `http://localhost:8086${response.avatarUrl}`;
+          setImageUrl(finalUrl);
         }
       } catch (error) {
         console.error("Дата татахад алдаа гарлаа:", error);
@@ -56,19 +62,25 @@ export default function StudentDetailPage() {
     if (params.id) fetchStudentDetails();
   }, [params.id]);
 
+  // 2. Зураг upload хийх үеийн логик
   const handleUpload = (info) => {
     if (info.file.status === "uploading") {
       setUploading(true);
       return;
     }
     if (info.file.status === "done") {
-      const url = info.file.response.url;
-      setImageUrl(url);
+      // Backend-ээс ResponseEntity.ok(Map.of("url", fileUrl)) гэж ирж байгаа
+      const resPath = info.file.response.url;
+      const fullUrl = resPath.startsWith("http")
+        ? resPath
+        : `http://localhost:8086${resPath}`;
+
+      setImageUrl(fullUrl);
       setUploading(false);
-      message.success("Зураг амжилттай солигдлоо");
+      message.success("Зураг амжилттай шинэчлэгдлээ.");
     } else if (info.file.status === "error") {
       setUploading(false);
-      message.error(`${info.file.name} хуулахад алдаа гарлаа.`);
+      message.error("Зураг хуулахад алдаа гарлаа.");
     }
   };
 
@@ -108,7 +120,7 @@ export default function StudentDetailPage() {
               style={{ textAlign: "center", borderRadius: 12 }}
             >
               <Upload
-                name="file" // Сэрвэр дээр MultipartFile-ийн нэр нь "file" байх нь түгээмэл
+                name="file"
                 listType="picture-circle"
                 className="avatar-uploader"
                 showUploadList={false}
@@ -116,7 +128,13 @@ export default function StudentDetailPage() {
                 onChange={handleUpload}
               >
                 {imageUrl ? (
-                  <div style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
                     <img
                       src={imageUrl}
                       alt="avatar"

@@ -30,6 +30,7 @@ export default function SessionTimer() {
         border: `1px solid ${statusColor}`,
         transition: "all 0.3s",
         lineHeight: 1,
+        width: isUrgent ? "120px" : "102px",
       }}
     >
       <ClockCircleOutlined style={{ color: statusColor }} />

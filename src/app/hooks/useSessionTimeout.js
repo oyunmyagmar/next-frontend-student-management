@@ -18,7 +18,7 @@ export const useSessionTimeout = () => {
     const checkTokenOnClient = () => {
       try {
         const decoded = jwtDecode(session.accessToken);
-        const currentTime = Date.now() / 1000;
+        const currentTime = Math.floor(Date.now() / 1000);
         const remaining = decoded.exp - currentTime;
 
         setTimeLeft(Math.max(0, Math.floor(remaining)));
@@ -29,14 +29,16 @@ export const useSessionTimeout = () => {
           return;
         }
 
-        if (remaining <= 20 && remaining > 0 && !modalOpened.current) {
+        if (remaining <= 60 && remaining > 0 && modalOpened.current === false) {
           modalOpened.current = true;
 
           Modal.warning({
             title: "Анхааруулга!",
-            content: "Таны сесс 20 хүрэхгүй секундын дараа дуусах гэж байна.",
+            content: "Таны сесс 1 минутын дараа дуусах гэж байна.",
             okText: "Ойлголоо",
-            onOk: () => {},
+            onOk: () => {
+              modalOpened.current = true;
+            },
           });
         }
       } catch (error) {
@@ -53,7 +55,7 @@ export const useSessionTimeout = () => {
       clearInterval(clientInterval);
       clearInterval(serverInterval);
     };
-  }, [session]);
+  }, [session?.accessToken]);
 
   return { timeLeft };
 };

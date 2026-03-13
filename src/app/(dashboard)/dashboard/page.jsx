@@ -1,31 +1,27 @@
 "use client";
 
 import {
-  Row,
-  Col,
   Card,
-  Statistic,
   Table,
-  Typography,
   Tag,
   Space,
   Button,
   Popconfirm,
   message,
+  Input,
+  Select,
 } from "antd";
 import {
-  UserOutlined,
-  RiseOutlined,
-  FallOutlined,
   EditOutlined,
   DeleteOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import axiosInstance from "../../../utils/axiosInstance";
 import { useEffect, useState } from "react";
 import { useSessionTimeout } from "../../hooks/useSessionTimeout";
-import { StudentInfoEditModal } from "./_components/StudentInfoEditModal";
 import { useRouter } from "next/navigation";
-const { Title } = Typography;
+import { StudentInfoEditModal, StudentStatisticInfo } from "./_components";
+import { useDebouncedCallback } from "use-debounce";
 
 export default function DashboardPage() {
   const [students, setStudents] = useState([]);
@@ -35,6 +31,9 @@ export default function DashboardPage() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [activeCount, setActiveCount] = useState(0);
   const [inactiveCount, setInactiveCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   const router = useRouter();
 
   useSessionTimeout();
@@ -42,21 +41,34 @@ export default function DashboardPage() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
+      // Шүүлтүүрийн параметрүүд
+      const params = {
+        search: searchTerm,
+        status: statusFilter === "ALL" ? null : statusFilter,
+      };
+
+      // Жагсаалт болон Тоог зэрэг татах
       const [countRes, recentRes] = await Promise.all([
         axiosInstance.get("/api/counts"),
-        axiosInstance.get("/api/recent"),
+        axiosInstance.get("/api/recent", { params }),
       ]);
 
+      // Статистик шинэчлэх
       setTotalCount(countRes.total);
-      setStudents(recentRes);
       setActiveCount(countRes.active);
       setInactiveCount(countRes.inactive);
+      setStudents(recentRes);
     } catch (error) {
       console.error("Дата татахад алдаа гарлаа:", error);
+      message.error("Дата татахад алдаа гарлаа");
     } finally {
       setLoading(false);
     }
   };
+
+  const debouncedFetch = useDebouncedCallback((value) => {
+    fetchStudents(value, statusFilter);
+  }, 500);
 
   useEffect(() => {
     fetchStudents();
@@ -108,112 +120,51 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <Title level={3}>Системийн төлөв</Title>
-
-      <Row gutter={[16, 16]} align="stretch" style={{ height: "130px" }}>
-        <Col span={6} style={{ height: "100%" }}>
-          <Card
-            variant="borderless"
-            style={{
-              borderLeft: "4px solid #1890ff",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-            }}
-            styles={{ body: { padding: "12px 16px", width: "100%" } }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: "14px" }}>Нийт Оюутнууд</span>}
-              value={totalCount}
-              prefix={<UserOutlined style={{ fontSize: "20px" }} />}
-              styles={{
-                content: {
-                  fontSize: "16px",
-                },
-              }}
-            />
-          </Card>
-        </Col>
-        <Col
-          span={6}
-          style={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <Card
-            variant="borderless"
-            style={{
-              borderLeft: "4px solid #52c41a",
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-            }}
-            styles={{ body: { padding: "4px 12px", width: "100%" } }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: "14px" }}>Идэвхитэй оюуан</span>}
-              value={activeCount}
-              styles={{
-                content: {
-                  color: "#52c41a",
-                  fontSize: "16px",
-                  lineHeight: "1",
-                },
-              }}
-            />
-          </Card>
-          <Card
-            variant="borderless"
-            style={{
-              borderLeft: "4px solid #faad14",
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-            }}
-            styles={{ body: { padding: "4px 12px", width: "100%" } }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: "14px" }}>Идэвхигүй оюутан</span>}
-              value={inactiveCount}
-              styles={{
-                content: {
-                  color: "#faad14",
-                  fontSize: "16px",
-                  lineHeight: "1",
-                },
-              }}
-            />
-          </Card>
-        </Col>
-
-        <Col span={6} style={{ height: "100%" }}>
-          <Card
-            variant="borderless"
-            style={{
-              borderLeft: "4px solid #f5222d",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-            }}
-            styles={{ body: { padding: "4px 12px", width: "100%" } }}
-          >
-            <Statistic
-              title={
-                <span style={{ fontSize: "14px" }}>Төлбөрийн үлдэгдэлтэй</span>
-              }
-              value={totalCount}
-              prefix={<FallOutlined style={{ fontSize: "20px" }} />}
-              styles={{ content: { color: "#cf1322", fontSize: "20px" } }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
+      <StudentStatisticInfo
+        totalCount={totalCount}
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+      />
       <div style={{ marginTop: 30 }}>
-        <Card title="Сүүлийн үеийн бүртгэл" variant="borderless">
+        <Card
+          title="Бүртгэлийн жагсаалт"
+          variant="borderless"
+          extra={
+            <Space size="middle">
+              <Input
+                placeholder="Нэр эсвэл имэйлээр хайх"
+                prefix={<SearchOutlined />}
+                style={{ width: 250 }}
+                allowClear
+                value={searchTerm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchTerm(value);
+                  debouncedFetch(value);
+                }}
+                onPressEnter={fetchStudents}
+              />
+              <Select
+                placeholder="Төлөв сонгох"
+                style={{ width: 150 }}
+                allowClear
+                onChange={(value) => setStatusFilter(value)}
+                options={[
+                  { value: "ACTIVE", label: "Идэвхтэй" },
+                  { value: "INACTIVE", label: "Идэвхгүй" },
+                ]}
+              />
+              <Button
+                type="primary"
+                icon={<SearchOutlined />}
+                loading={loading}
+                onClick={fetchStudents}
+              >
+                Шүүх
+              </Button>
+            </Space>
+          }
+        >
           <Table
             loading={loading}
             pagination={{ pageSize: 10 }}
@@ -224,6 +175,7 @@ export default function DashboardPage() {
               {
                 title: "Овог нэр",
                 key: "fullName",
+                width: 200,
                 render: (record) => (
                   <span
                     style={{
