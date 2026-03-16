@@ -17,11 +17,10 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import axiosInstance from "../../../utils/axiosInstance";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSessionTimeout } from "../../hooks/useSessionTimeout";
 import { useRouter } from "next/navigation";
 import { StudentInfoEditModal, StudentStatisticInfo } from "./_components";
-import { useDebouncedCallback } from "use-debounce";
 
 export default function DashboardPage() {
   const [students, setStudents] = useState([]);
@@ -35,25 +34,24 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   const router = useRouter();
-
   useSessionTimeout();
 
-  const fetchStudents = async () => {
+  // Жагсаалт болон тоог татах функц
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      // Шүүлтүүрийн параметрүүд
       const params = {
-        search: searchTerm,
+        search: searchTerm || null,
         status: statusFilter === "ALL" ? null : statusFilter,
       };
 
-      // Жагсаалт болон Тоог зэрэг татах
+      // API-уудаас датаг зэрэг татах
       const [countRes, recentRes] = await Promise.all([
         axiosInstance.get("/api/counts"),
         axiosInstance.get("/api/recent", { params }),
       ]);
 
-      // Статистик шинэчлэх
+      // Статистик болон жагсаалтыг шинэчлэх
       setTotalCount(countRes.total);
       setActiveCount(countRes.active);
       setInactiveCount(countRes.inactive);
@@ -64,25 +62,23 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter]);
 
-  const debouncedFetch = useDebouncedCallback((value) => {
-    fetchStudents(value, statusFilter);
-  }, 500);
-
+  // Анх удаа ачааллах болон event listener тохируулах
   useEffect(() => {
     fetchStudents();
 
     const handleRefresh = () => {
-      console.log("Шинэ оюутан нэмэгдсэн дохио ирлээ. Датаг шинэчилж байна...");
       fetchStudents();
     };
+
     window.addEventListener("studentAdded", handleRefresh);
     return () => {
       window.removeEventListener("studentAdded", handleRefresh);
     };
-  }, []);
+  }, [fetchStudents]);
 
+  // Устгах үйлдэл
   const handleDelete = async (id) => {
     setLoading(true);
     try {
@@ -96,11 +92,13 @@ export default function DashboardPage() {
     }
   };
 
+  // Модал нээх (Засах)
   const showEditModal = (record) => {
     setEditingStudent(record);
     setIsEditModalOpen(true);
   };
 
+  // Шинэчлэх үйлдэл
   const handleUpdate = async (values) => {
     setLoading(true);
     try {
@@ -112,6 +110,7 @@ export default function DashboardPage() {
       setIsEditModalOpen(false);
       fetchStudents();
     } catch (error) {
+      console.error("Шинэчлэхэд алдаа гарлаа:", error);
       message.error("Шинэчлэхэд алдаа гарлаа");
     } finally {
       setLoading(false);
@@ -125,6 +124,7 @@ export default function DashboardPage() {
         activeCount={activeCount}
         inactiveCount={inactiveCount}
       />
+
       <div style={{ marginTop: 30 }}>
         <Card
           title="Бүртгэлийн жагсаалт"
@@ -137,19 +137,16 @@ export default function DashboardPage() {
                 style={{ width: 250 }}
                 allowClear
                 value={searchTerm}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSearchTerm(value);
-                  debouncedFetch(value);
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 onPressEnter={fetchStudents}
               />
               <Select
                 placeholder="Төлөв сонгох"
                 style={{ width: 150 }}
-                allowClear
+                value={statusFilter}
                 onChange={(value) => setStatusFilter(value)}
                 options={[
+                  { value: "ALL", label: "Бүгд" },
                   { value: "ACTIVE", label: "Идэвхтэй" },
                   { value: "INACTIVE", label: "Идэвхгүй" },
                 ]}
@@ -171,7 +168,12 @@ export default function DashboardPage() {
             dataSource={students}
             rowKey="id"
             columns={[
-              { title: "Сонгох" },
+              {
+                title: "#",
+                key: "index",
+                width: 60,
+                render: (_, __, index) => index + 1,
+              },
               {
                 title: "Овог нэр",
                 key: "fullName",
